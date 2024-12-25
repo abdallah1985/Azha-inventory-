@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>مخزن خامات أزهى</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 15px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        input, select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .add-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>مخزن خامات أزهى</h1>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="overview">نظرة عامة</div>
+        <div class="tab" data-tab="items">إدارة الأصناف</div>
+    </div>
+
+    <div id="overview" class="tab-content active">
+        <h2>ملخص المخزون</h2>
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th>الصنف</th>
+                    <th>الكمية الإجمالية</th>
+                    <th>إجمالي الوارد</th>
+                    <th>إجمالي المنصرف</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+                <!-- سيتم ملؤها تلقائيًا -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="items" class="tab-content">
+        <h2>إدارة الأصناف</h2>
+        <div id="itemsList">
+            <!-- سيتم إضافة الأصناف هنا -->
+        </div>
+        <button onclick="addNewItem()" class="add-btn">إضافة صنف جديد</button>
+    </div>
+
+    <script>
+        // مصفوفة لتخزين الأصناف
+        let items = [];
+
+        // تبديل التبويب
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // إزالة الكلاس النشط من كل التبويبات
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+
+                // إضافة الكلاس النشط للتبويب المحدد
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+
+                // تحديث ملخص المخزون عند الانتقال لنظرة عامة
+                if(tab.dataset.tab === 'overview') {
+                    updateSummary();
+                }
+            });
+        });
+
+        // إضافة صنف جديد
+        function addNewItem() {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            itemDiv.innerHTML = `
+                <h3>
+                    <input type="text" placeholder="اسم الصنف" class="item-name">
+                    <button onclick="removeItem(this)" class="remove-btn">×</button>
+                </h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الكمية</th>
+                            <th>نوع العملية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="date" class="transaction-date"></td>
+                            <td><input type="number" min="0" class="transaction-quantity"></td>
+                            <td>
+                                <select class="transaction-type">
+                                    <option value="incoming">وارد</option>
+                                    <option value="outgoing">منصرف</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">
+                                <button onclick="addTransaction(this)" class="add-btn">إضافة عملية</button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+            
+            document.getElementById('itemsList').appendChild(itemDiv);
+        }
+
+        // إضافة عملية جديدة لصنف
+        function addTransaction(button) {
+            const table = button.closest('table').querySelector('tbody');
+            const newRow = table.rows[0].cloneNode(true);
+            
+            // مسح القيم
+            newRow.querySelectorAll('input').forEach(input => input.value = '');
+            
+            table.appendChild(newRow);
+        }
+
+        // حذف صنف
+        function removeItem(button) {
+            button.closest('.item').remove();
+        }
+
+        // تحديث ملخص المخزون
+        function updateSummary() {
+            const summaryBody = document.getElementById('summaryTableBody');
+            summaryBody.innerHTML = ''; // مسح المحتوى الحالي
+
+            const itemElements = document.querySelectorAll('.item');
+            
+            itemElements.forEach(itemElement => {
+                const itemName = itemElement.querySelector('.item-name').value;
+                const rows = itemElement.querySelectorAll('tbody tr');
+                
+                let totalIncoming = 0;
+                let totalOutgoing = 0;
+                
+                rows.forEach(row => {
+                    const quantity = parseFloat(row.querySelector('.transaction-quantity').value) || 0;
+                    const type = row.querySelector('.transaction-type').value;
+                    
+                    if (type === 'incoming') {
+                        totalIncoming += quantity;
+                    } else {
+                        totalOutgoing += quantity;
+                    }
+                });
+                
+                const totalQuantity = totalIncoming - totalOutgoing;
+                
+                if (itemName) {
+                    const newRow = summaryBody.insertRow();
+                    newRow.innerHTML = `
+                        <td>${itemName}</td>
+                        <td>${totalQuantity}</td>
+                        <td>${totalIncoming}</td>
+                        <td>${totalOutgoing}</td>
+                    `;
+                }
+            });
+        }
+
+        // إضافة صنف أولي
+        addNewItem();
+    </script>
+
+    <footer>
+        By Abdallah Refaat
+    </footer>
+</body>
+</html>
